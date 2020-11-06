@@ -160,6 +160,7 @@ GeneralErrorCast ConditionRR(char* Arguments, PCalls Calls, PArgumentInstance Ar
 
 GeneralErrorCast ConditionRA(char* Arguments, PCalls Calls, PArgumentInstance ArgumentInstance)
 {
+	const SymbolCombo StringCombos[] = { { 'n', '\n' }, { 'r', '\r' }, { '<', '<' }, { '>', '>' }, { '\"', '\"' }, { ',', ',' }, { '\\', '\\' } };
 	static Argument ParseArguments = { ArgumentType_STRING | ArgumentType_VARIADIC, 0 };
 	if (!NT_SUCCESS(GENERAL_ERROR_NTSTATUS(SeperateArguments(ArgumentInstance, Calls, Arguments, &ParseArguments, 1, TRUE))))
 	{
@@ -167,19 +168,68 @@ GeneralErrorCast ConditionRA(char* Arguments, PCalls Calls, PArgumentInstance Ar
 		return STATUS_SUCCESS;
 	}
 
+	unsigned long long* RunVariadic;
+	unsigned long Length;
+
+	char Combination[] = "\\\0";
+	char** StringArray;
+	const char* String;
+	char** RunArray;
+	char* Copy;
+
+	const SymbolCombo* RunCombos;
 	PVariadicType Variadic;
 
 	Variadic = ((PVariadicType)ParseArguments.Argument);
 
-	const char* String = ((char*)Variadic->Arguments[(rand() + (unsigned long)pow(rand(), (rand() % 3))) % Variadic->ArgumentCount]);
-	unsigned long Length = strlen(String) + 1;
+	StringArray = ((char**)malloc(Variadic->ArgumentCount * sizeof(char*)));
+	RunArray = StringArray;
+	RunVariadic = Variadic->Arguments;
+	for (unsigned long i = 0; i < Variadic->ArgumentCount; i++, RunArray++, RunVariadic++)
+	{
+		char* LocatedCombo;
+		unsigned long BreakerCount;
 
-	char* Copy = ((char*)malloc(Length));
+		Length = strlen((char*)*RunVariadic);
+		(*RunArray) = ((char*)malloc(Length + 1));
+		memcpy(*RunArray, ((char*)*RunVariadic), (Length + 1));
 
-	memcpy(Copy, String, Length);
+		RunCombos = StringCombos;
+		for (unsigned long ii = 0; ii < GetArraySize(StringCombos); ii++, RunCombos++)
+		{
+			Combination[1] = RunCombos->Symbol;
 
-	Calls->Replace(Calls->Instance, Copy, FALSE);
-	free(Copy);
+			LocatedCombo = *RunArray;
+			while (TRUE)
+			{
+				LocatedCombo = strstr(LocatedCombo, Combination);
+				if (!LocatedCombo)
+					break;
+
+				Calls->CountBlockers(Calls->Instance, LocatedCombo, &BreakerCount);
+				if (BreakerCount % 2)
+				{
+					unsigned long MoveLength;
+
+					MoveLength = strlen(LocatedCombo + 2) + 1;
+					memmove(LocatedCombo + 1, LocatedCombo + 2, MoveLength);
+					(*LocatedCombo) = RunCombos->Replacement;
+				}
+				LocatedCombo++;
+			}
+		}
+	}
+
+
+	String = (StringArray[(rand() + (unsigned long)pow(rand(), (rand() % 3))) % Variadic->ArgumentCount]);
+
+	Calls->Replace(Calls->Instance, String, FALSE);
+
+	RunArray = StringArray;
+	for (unsigned long i = 0; i < Variadic->ArgumentCount; i++, RunArray++)
+		free(*RunArray);
+
+	free(StringArray);
 
 	CleanGarbage(&ArgumentInstance->ArgumentGarbage);
 	return STATUS_SUCCESS;
@@ -214,7 +264,7 @@ GeneralErrorCast ConditionSF(char* Arguments, PCalls Calls, PArgumentInstance Ar
 	char* FileBuffer;
 	char* LastEntry;
 	char* RunFile;
-	
+
 	FileHandle = CreateFileA(((char*)ParseArguments[1].Argument), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	FileSize = GetFileSize(FileHandle, 0);
 	FileBuffer = ((char*)malloc(FileSize + 1));
@@ -275,7 +325,7 @@ GeneralErrorCast ConditionSF(char* Arguments, PCalls Calls, PArgumentInstance Ar
 			unsigned long RunEntryCount;
 			unsigned long Length;
 			char* Seperater;
-			
+
 			Length = strlen(*RunSeperaters);
 			Seperater = ((char*)malloc(Length + 1));
 			memcpy(Seperater, *RunSeperaters, (Length + 1));
@@ -331,7 +381,7 @@ GeneralErrorCast ConditionSF(char* Arguments, PCalls Calls, PArgumentInstance Ar
 
 				RunFile += Length;
 			}
-			
+
 			free(Seperater);
 		}
 	}
@@ -356,7 +406,7 @@ GeneralErrorCast ConditionSF(char* Arguments, PCalls Calls, PArgumentInstance Ar
 
 GeneralErrorCast ConditionSP(char* Arguments, PCalls Calls, PArgumentInstance ArgumentInstance)
 {
-	const SymbolCombo StringCombos[] = { { 'n', '\n' }, { '<', '<' }, { '>', '>' }, { '\"', '\"' }, { ',', ',' }, { '\\', '\\' } };
+	const SymbolCombo StringCombos[] = { { 'n', '\n' }, {'\\r', '\r'}, { '<', '<' }, { '>', '>' }, { '\"', '\"' }, { ',', ',' }, { '\\', '\\' } };
 
 	static Argument ParseArguments[] = { { ArgumentType_STRING, 0}, {ArgumentType_D64, 0} };
 	if (!NT_SUCCESS(GENERAL_ERROR_NTSTATUS(SeperateArguments(ArgumentInstance, Calls, Arguments, ParseArguments, GetArraySize(ParseArguments), TRUE))))
@@ -628,7 +678,7 @@ GeneralErrorCast ConditionSS(char* Arguments, PCalls Calls, PArgumentInstance Ar
 	{
 		unsigned long long String;
 		unsigned long Length;
-		
+
 		Length = strlen((char*)*RunVariadic) + 1;
 		String = ((unsigned long long)malloc(Length));
 		UpdateGarbage(&ArgumentInstance->VariableGarbage, ((void*)String), 0);
