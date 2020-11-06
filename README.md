@@ -2,7 +2,7 @@ The script revolves around itself being the final file,  the code can be merged 
 Example: <br>
 <RR=[10, 100, 10]>; <RR=[10, 100, 10]>  potential result can be: 20;50<br>
 The execution file is always named “Settings.txt” and will be grabbed from the execution folder.<br>
-Most of the code will revolve around these symbols: < >  [ ] = “ , \<br>
+Most of the code will revolve around these symbols: < >  [ ] = “ , \ <br>
 < > - Function region symbols<br>
 [ ] – Argument start and stop symbols<br>
 = - Argument listing symbol<br>
