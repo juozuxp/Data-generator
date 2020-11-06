@@ -1,0 +1,6 @@
+<SF=["File", "MyFile.txt", "\r\n", ".", "\,", " "]>
+<SI=["Random", 0, 100, 10]>
+<SS=["Spawn", "\<RA=[File]\>;\<RR=[0\, 1000\, 10]\>;\<RR=[Random]\>;\<RR=[\"AAAA\"\, \"BBBBBB\"]\>;\<RR=[\"AAAA\"\, \"BBBBBB\"]\>\n", "1000"]>
+<SP=[Spawn]>
+<OF=["Duomenys.txt"]>
+<CB>
