@@ -32,7 +32,7 @@ Example:<br>
 Spawn and Set file function will replace blocked symbols with their counterparts and have unique symbols which will be replaced with their corresponding equivalence:<br>
 \n – Line break<br>
 \r – Carriage return<br>
-\\ - \ <br>
+\\\ - \ <br>
 \< - <<br>
 \> - ><br>
 \” – “<br>
