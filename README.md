@@ -33,9 +33,9 @@ Spawn and Set file function will replace blocked symbols with their counterparts
 \n – Line break<br>
 \r – Carriage return<br>
 \\\ - \ <br>
-\< - <<br>
-\> - ><br>
+\\< - <<br>
+\\> - ><br>
 \” – “<br>
-\, - ,<br>
+\\, - ,<br>
 For an example refer to “Settings Example” folder.<br>
 Currently there is no error policy, all code errors will probably result in an exception which will crash the parser, zero error tolerance will come with the future updates.<br>
