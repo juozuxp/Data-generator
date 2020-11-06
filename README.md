@@ -1,4 +1,4 @@
-The script revolves around itself being the final file,  the code can be merged with characters of almost any sort,  code will execute leaving no mark of it ever being there or it will replace itself with the result.
+The script revolves around itself being the final file,  the code can be merged with characters of almost any sort,  code will execute leaving no mark of it ever being there or it will replace itself with the result.<br>
 Example: 
 <RR=[10, 100, 10]>; <RR=[10, 100, 10]>  potential result can be: 20;50
 The execution file is always named “Settings.txt” and will be grabbed from the execution folder.
