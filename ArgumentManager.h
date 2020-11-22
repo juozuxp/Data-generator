@@ -1,5 +1,5 @@
 #pragma once
-#include "Imports.h"
+#include <Imports.h>
 #include <stdio.h>
 
 #define INDEX_ARGUMENT_MANAGER 0x1
@@ -219,7 +219,9 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 
 	LastReplace = ArgumentStart;
 	RunArguments = Arguments;
-	for (unsigned long i = 0; (i < ArgumentCount) && (*ArgumentStart); i++, RunArguments++, ArgumentStart++)
+
+	unsigned long i;
+	for (i = 0; (i < ArgumentCount) && (*ArgumentStart); i++, RunArguments++, ArgumentStart++)
 	{
 		if (RunArguments->ArgumentType & ArgumentType_VARIADIC)
 			break;
@@ -405,7 +407,7 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 		ArgumentStart = LastReplace;
 	}
 
-	if ((RunArguments->ArgumentType & ArgumentType_VARIADIC) && LastReplace)
+	if ((RunArguments->ArgumentType & ArgumentType_VARIADIC) && LastReplace && (i < ArgumentCount))
 	{
 		PVariadicType VAArgs;
 
