@@ -26,5 +26,8 @@
     <ClInclude Include="ArgumentManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BaseUtilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
