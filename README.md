@@ -20,11 +20,13 @@ SS – Set string, sets a string variable array. Arguments: [String ArrayName, V
 SF – Set File, reads file data, separates it and stores it inside a variable array. Arguments: [String ArrayName, Optional Variadic String Seperaters (default: \r\n)]<br>
 RR – Random range, generates a value in a range and replaces itself with the result. Arguments: [String(Alphabetical)/Integer StartRange, String(Alphabetical)/Integer EndRange, Optional Integer Step (default: 1)]<br>
 RA – Random Array, grabs an array element from a random index. Arguments: [Variadic String Array]<br>
-SP – Spawn, generates lines of text replacing itself (this function can spawn code and will restart the execution). Arguments: [String Text, Integer AmountToSpawn]<br>
+SP – Spawn, generates lines of text replacing itself. Arguments: [String Text, Integer AmountToSpawn]<br>
 OF – Output File, outputs the result into a file. Arguments: [String FileName]<br>
 CB – Clear Breaks, clears access line breaks and spaces.<br>
+RS - Restart Execution, starts executing from the start
 DF – Display File, opens a file post execution.  Arguments: [String FilePath(FileName)]<br>
 DD – Display Directory, opens a directory post execution. Arguments: [Optional String DirectoryPath(DirectoryName, default: Current Directory)]<br>
+All functions can contain code and spawn it if they're designed to.
 The code contains variable arrays, they are both typed and type less (e.g. a integer can both be an integer and a string or a string can both be an integer (if parse able) and a string) variables can be used as arguments and don’t require any prefixing.<br>
 Example:<br>
 <SS=[“Random”, ”0”, “100”, “10”]><br>
