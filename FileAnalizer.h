@@ -1,6 +1,8 @@
 #pragma once
 #include "Imports.h"
 #include "BasicUtilities.h"
+#include <stdio.h>
+#include "BaseUtilities.h"
 
 typedef GeneralErrorCast(*QueFunction)(struct _CallsObject* Instance, void* Reserved);
 
@@ -321,7 +323,7 @@ static GeneralErrorCast Analize(char** Buffer, PCondition Conditions, unsigned l
 				if (memcmp(RuntimeBuffer, RunConiditions->StartCondition, *RunSCLengthMap))
 					continue;
 
-				CountBlockers(&CallsInstance, RuntimeBuffer, &BreakCount);
+				CountBlockers(&CallsInstance, RuntimeBuffer - 1, &BreakCount);
 				if (!(BreakCount % 2))
 					break;
 
@@ -339,22 +341,40 @@ static GeneralErrorCast Analize(char** Buffer, PCondition Conditions, unsigned l
 
 		BreakCount = 1;
 		EndLocation = StartLocation;
-		while (BreakCount % 2)
+		for (; *EndLocation; EndLocation++)
 		{
-			EndLocation = strstr(EndLocation, RunConiditions->EndCondition);
-			if (!EndLocation)
+			while (*EndLocation == '\"')
 			{
-				EndLocation += *RunECLengthMap;
-				break;
+				CountBlockers(&CallsInstance, EndLocation - 1, &BreakCount);
+				if (!(BreakCount % 2))
+				{
+					char* Found;
+
+					Found = EndLocation + 1;
+					do
+					{
+						Found = strstr(Found + 1, "\"");
+						if (!Found)
+							ERROR_PRINTF("No string closing statement.\r\n");
+
+						CountBlockers(&CallsInstance, Found - 1, &BreakCount);
+					} while (BreakCount % 2);
+
+					EndLocation += Found - EndLocation + 1;
+				}
+				else
+					break;
 			}
 
-			CountBlockers(&CallsInstance, (EndLocation - 1), &BreakCount);
-			EndLocation += *RunECLengthMap;
-		}
+			if (memcmp(EndLocation, RunConiditions->EndCondition, *RunECLengthMap))
+				continue;
 
-		EndLocation -= *RunECLengthMap;
-		if (!EndLocation)
-			break;
+			CountBlockers(&CallsInstance, EndLocation - 1, &BreakCount);
+			if (!(BreakCount % 2))
+				break;
+		}
+		if (!*EndLocation)
+			ERROR_PRINTF("%s closing statement is missing\r\n", RunConiditions->StartCondition);
 
 		CallsInstance.EndLocation = EndLocation;
 		CallsInstance.CurrentLocation = RuntimeBuffer;

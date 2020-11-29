@@ -1,6 +1,7 @@
 #pragma once
-#include <Imports.h>
+#include "Imports.h"
 #include <stdio.h>
+#include "BaseUtilities.h"
 
 #define INDEX_ARGUMENT_MANAGER 0x1
 
@@ -203,17 +204,17 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 		RunArguments->Argument = 0;
 
 	if (!strstr(StringArguments, "="))
-		return GENERAL_ERROR_ASSEMBLE(INDEX_ARGUMENT_MANAGER, STATUS_INVALID_MEMBER);
+		ERROR_PRINTF("No equvilence sign in %s\r\n", Calls->Instance->CurrentCondition->StartCondition);
 
 	char* ArgumentStart = strstr(StringArguments, "[");
 	if (!ArgumentStart)
-		return GENERAL_ERROR_ASSEMBLE(INDEX_ARGUMENT_MANAGER, STATUS_INVALID_MEMBER);
+		ERROR_PRINTF("No argument start sign in %s\r\n", Calls->Instance->CurrentCondition->StartCondition);
 
 	char* ArgumentEnd = Calls->Instance->EndLocation;
 	for (; (*ArgumentEnd != '[') && (*ArgumentEnd != ']'); ArgumentEnd--);
 
 	if (*ArgumentEnd == '[')
-		return GENERAL_ERROR_ASSEMBLE(INDEX_ARGUMENT_MANAGER, STATUS_INVALID_MEMBER);
+		ERROR_PRINTF("No argument closing sign in %s\r\n", Calls->Instance->CurrentCondition->StartCondition);
 
 	(*ArgumentEnd) = '\0';
 
@@ -228,17 +229,43 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 
 		BreakCount = 1;
 		LastReplace = ArgumentStart;
-		while (BreakCount % 2)
+		for (; *LastReplace; LastReplace++)
 		{
-			LastReplace = strstr(LastReplace + 1, ",");
-			if (!LastReplace)
-				break;
+			while (*LastReplace == '\"')
+			{
+				CountBlockers(Calls->Instance, LastReplace - 1, &BreakCount);
+				if (!(BreakCount % 2))
+				{
+					char* Found;
 
-			Calls->CountBlockers(Calls->Instance, LastReplace - 1, &BreakCount);
+					Found = LastReplace + 1;
+					do
+					{
+						Found = strstr(Found + 1, "\"");
+						if (!Found)
+							ERROR_PRINTF("Missing string closing statement.\r\n");
+
+						CountBlockers(Calls->Instance, Found - 1, &BreakCount);
+					} while (BreakCount % 2);
+
+					LastReplace += Found - LastReplace + 1;
+				}
+				else
+					break;
+			}
+
+			if (*LastReplace == ',')
+			{
+				Calls->CountBlockers(Calls->Instance, LastReplace - 1, &BreakCount);
+				if (!(BreakCount % 2))
+					break;
+			}
 		}
 
-		if (LastReplace)
+		if (*LastReplace)
 			(*LastReplace) = '\0';
+		else
+			LastReplace = 0;
 
 		switch (RunArguments->ArgumentType)
 		{
@@ -392,8 +419,6 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 
 			if (TrimArguments)
 				(*StringEnd) = '\0';
-
-			ArgumentStart += (StringEnd - ((char*)RunArguments->Argument) + 3);
 		} break;
 		}
 
@@ -418,15 +443,37 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 
 		ArgumentCount = 1;
 		RunEvaluation = ArgumentStart;
-		while (TRUE)
+		for (; *RunEvaluation; RunEvaluation++)
 		{
-			RunEvaluation = strstr(RunEvaluation + 1, ",");
-			if (!RunEvaluation)
-				break;
+			while (*RunEvaluation == '\"')
+			{
+				CountBlockers(Calls->Instance, RunEvaluation - 1, &BreakCount);
+				if (!(BreakCount % 2))
+				{
+					char* Found;
 
-			Calls->CountBlockers(Calls->Instance, RunEvaluation - 1, &BreakCount);
-			if (!(BreakCount % 2))
-				ArgumentCount++;
+					Found = RunEvaluation + 1;
+					do
+					{
+						Found = strstr(Found + 1, "\"");
+						if (!Found)
+							ERROR_PRINTF("Missing string closing statement.\r\n");
+
+						CountBlockers(Calls->Instance, Found - 1, &BreakCount);
+					} while (BreakCount % 2);
+
+					RunEvaluation += Found - RunEvaluation + 1;
+				}
+				else
+					break;
+			}
+
+			if (*RunEvaluation == ',')
+			{
+				Calls->CountBlockers(Calls->Instance, RunEvaluation - 1, &BreakCount);
+				if (!(BreakCount % 2))
+					ArgumentCount++;
+			}
 		}
 
 		StartIndex = 0;
@@ -452,17 +499,43 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 		{
 			BreakCount = 1;
 			LastReplace = ArgumentStart;
-			while (BreakCount % 2)
+			for (; *LastReplace; LastReplace++)
 			{
-				LastReplace = strstr(LastReplace + 1, ",");
-				if (!LastReplace)
-					break;
+				while (*LastReplace == '\"')
+				{
+					CountBlockers(Calls->Instance, LastReplace - 1, &BreakCount);
+					if (!(BreakCount % 2))
+					{
+						char* Found;
 
-				Calls->CountBlockers(Calls->Instance, LastReplace - 1, &BreakCount);
+						Found = LastReplace + 1;
+						do
+						{
+							Found = strstr(Found + 1, "\"");
+							if (!Found)
+								ERROR_PRINTF("Missing string closing statement.\r\n");
+
+							CountBlockers(Calls->Instance, Found - 1, &BreakCount);
+						} while (BreakCount % 2);
+
+						LastReplace += Found - LastReplace + 1;
+					}
+					else
+						break;
+				}
+
+				if (*LastReplace == ',')
+				{
+					Calls->CountBlockers(Calls->Instance, LastReplace - 1, &BreakCount);
+					if (!(BreakCount % 2))
+						break;
+				}
 			}
 
-			if (LastReplace)
+			if (*LastReplace)
 				(*LastReplace) = '\0';
+			else
+				LastReplace = 0;
 
 			switch (RunArguments->ArgumentType & (ArgumentType_VARIADIC - 1))
 			{
@@ -575,8 +648,6 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 
 				if (TrimArguments)
 					(*StringEnd) = '\0';
-
-				ArgumentStart += (StringEnd - ((char*)*RunVAArgs) + 3);
 			} break;
 			}
 
