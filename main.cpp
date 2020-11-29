@@ -9,6 +9,38 @@ typedef struct _SymbolCombo
 	const char Replacement;
 } SymbolCombo, * PSymbolCombo;
 
+GeneralErrorCast FixCombos(PCalls Calls, char * SearchingGround, SymbolCombo const * Combos, unsigned long ComboCount)
+{
+	static char Combination[] = "\\\0";
+	char* LocatedCombo;
+	unsigned long BreakerCount;
+	for (unsigned long i = 0; i < ComboCount; i++, Combos++)
+	{
+		Combination[1] = Combos->Symbol;
+
+		LocatedCombo = SearchingGround;
+		while (TRUE)
+		{
+			LocatedCombo = strstr(LocatedCombo, Combination);
+			if (!LocatedCombo)
+				break;
+
+			Calls->CountBlockers(Calls->Instance, LocatedCombo, &BreakerCount);
+			if (BreakerCount % 2)
+			{
+				unsigned long MoveLength;
+
+				MoveLength = strlen(LocatedCombo + 2) + 1;
+				memmove(LocatedCombo + 1, LocatedCombo + 2, MoveLength);
+				(*LocatedCombo) = Combos->Replacement;
+			}
+			LocatedCombo++;
+		}
+	}
+
+	return STATUS_SUCCESS;
+}
+
 GeneralErrorCast OFCallback(PCallsObject Instance, HANDLE FileHandle)
 {
 	WriteFile(FileHandle, Instance->Buffer, (Instance->BufferCount - 1), 0, 0);
@@ -186,6 +218,7 @@ GeneralErrorCast ConditionRR(char* Arguments, PCalls Calls, PArgumentInstance Ar
 
 GeneralErrorCast ConditionRA(char* Arguments, PCalls Calls, PArgumentInstance ArgumentInstance)
 {
+	const SymbolCombo StringCombos[] = { { 'n', '\n' }, { 'r', '\r' }, { '<', '<' }, { '>', '>' }, { '\"', '\"' }, { ',', ',' }, { '\\', '\\' } };
 	static Argument ParseArguments = { ArgumentType_STRING | ArgumentType_VARIADIC, 0 };
 	if (!NT_SUCCESS(GENERAL_ERROR_NTSTATUS(SeperateArguments(ArgumentInstance, Calls, Arguments, &ParseArguments, 1, TRUE))))
 	{
@@ -204,6 +237,8 @@ GeneralErrorCast ConditionRA(char* Arguments, PCalls Calls, PArgumentInstance Ar
 
 	memcpy(Copy, String, Length);
 
+	FixCombos(Calls, Copy, StringCombos, GetArraySize(StringCombos));
+
 	Calls->Replace(Calls->Instance, Copy, FALSE);
 	free(Copy);
 
@@ -220,8 +255,6 @@ GeneralErrorCast ConditionSF(char* Arguments, PCalls Calls, PArgumentInstance Ar
 		CleanGarbage(&ArgumentInstance->ArgumentGarbage);
 		return STATUS_SUCCESS;
 	}
-
-	static char Combination[] = "\\\0";
 
 	const SymbolCombo* RunCombos;
 	VariadicType* Variadic;
@@ -306,30 +339,7 @@ GeneralErrorCast ConditionSF(char* Arguments, PCalls Calls, PArgumentInstance Ar
 			Seperater = ((char*)malloc(Length + 1));
 			memcpy(Seperater, *RunSeperaters, (Length + 1));
 
-			RunCombos = StringCombos;
-			for (unsigned long ii = 0; ii < GetArraySize(StringCombos); ii++, RunCombos++)
-			{
-				Combination[1] = RunCombos->Symbol;
-
-				LocatedCombo = Seperater;
-				while (TRUE)
-				{
-					LocatedCombo = strstr(LocatedCombo, Combination);
-					if (!LocatedCombo)
-						break;
-
-					Calls->CountBlockers(Calls->Instance, LocatedCombo, &BreakerCount);
-					if (BreakerCount % 2)
-					{
-						unsigned long MoveLength;
-
-						MoveLength = strlen(LocatedCombo + 2) + 1;
-						memmove(LocatedCombo + 1, LocatedCombo + 2, MoveLength);
-						(*LocatedCombo) = RunCombos->Replacement;
-					}
-					LocatedCombo++;
-				}
-			}
+			FixCombos(Calls, Seperater, StringCombos, GetArraySize(StringCombos));
 
 			Length = strlen(Seperater);
 
@@ -391,8 +401,6 @@ GeneralErrorCast ConditionSP(char* Arguments, PCalls Calls, PArgumentInstance Ar
 		return STATUS_SUCCESS;
 	}
 
-	static char Combination[] = "\\\0";
-
 	const SymbolCombo* RunCombos;
 	unsigned long CopyLength;
 	unsigned long Count;
@@ -406,32 +414,9 @@ GeneralErrorCast ConditionSP(char* Arguments, PCalls Calls, PArgumentInstance Ar
 	memcpy(Copies, ((char*)ParseArguments[0].Argument), CopyLength);
 	(*(Copies + CopyLength)) = '\0';
 
-	RunCombos = StringCombos;
-	for (unsigned long i = 0; i < GetArraySize(StringCombos); i++, RunCombos++)
-	{
-		Combination[1] = RunCombos->Symbol;
+	FixCombos(Calls, Copies, StringCombos, GetArraySize(StringCombos));
 
-		LocatedCombo = Copies;
-		while (TRUE)
-		{
-			LocatedCombo = strstr(LocatedCombo, Combination);
-			if (!LocatedCombo)
-				break;
-
-			Calls->CountBlockers(Calls->Instance, LocatedCombo, &Count);
-			if (Count % 2)
-			{
-				unsigned long MoveLength;
-
-				MoveLength = strlen(LocatedCombo + 2) + 1;
-				memmove(LocatedCombo + 1, LocatedCombo + 2, MoveLength);
-				(*LocatedCombo) = RunCombos->Replacement;
-
-				CopyLength--;
-			}
-			LocatedCombo++;
-		}
-	}
+	CopyLength = strlen(Copies);
 
 	CopyRuntime = Copies + CopyLength;
 	for (unsigned long i = 1; i < ParseArguments[1].Argument; i++, CopyRuntime += CopyLength)
@@ -441,8 +426,6 @@ GeneralErrorCast ConditionSP(char* Arguments, PCalls Calls, PArgumentInstance Ar
 
 	Calls->Replace(Calls->Instance, Copies, TRUE);
 	free(Copies);
-
-	Calls->Restart(Calls->Instance);
 
 	CleanGarbage(&ArgumentInstance->ArgumentGarbage);
 	return STATUS_SUCCESS;
@@ -718,6 +701,14 @@ GeneralErrorCast ConditionSI(char* Arguments, PCalls Calls, PArgumentInstance Ar
 	return STATUS_SUCCESS;
 }
 
+GeneralErrorCast ConditionRS(char* Arguments, PCalls Calls)
+{
+	Calls->Restart(Calls->Instance);
+	Calls->Remove(Calls->Instance);
+
+	return STATUS_SUCCESS;
+}
+
 int main()
 {
 	HANDLE FileHandle;
@@ -739,7 +730,7 @@ int main()
 
 	memset(&ArgumentInstance, 0, sizeof(ArgumentInstance));
 
-	static Condition Conditions[11];
+	static Condition Conditions[12];
 
 	Conditions[0].EndCondition = ">";
 	Conditions[0].StartCondition = "<SI";
@@ -795,6 +786,11 @@ int main()
 	Conditions[10].StartCondition = "<DD";
 	Conditions[10].Conditional = ((ConditionCall)ConditionDD);
 	Conditions[10].Reserved = &ArgumentInstance;
+
+	Conditions[11].EndCondition = ">";
+	Conditions[11].StartCondition = "<RS";
+	Conditions[11].Conditional = ((ConditionCall)ConditionRS);
+	Conditions[11].Reserved = &ArgumentInstance;
 
 	Analize(((char**)&FileBuffer), Conditions, GetArraySize(Conditions));
 

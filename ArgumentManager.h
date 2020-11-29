@@ -569,6 +569,7 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 						for (ii = 0; ii < VVariables->ArgumentCount; ii++, i++, RunVVariables++, RunVAArgs++)
 							CastVariables(ParserInstance, *RunVVariables, RunVariables->VariableType, RunArguments->ArgumentType, RunVAArgs);
 
+						i--;
 						break;
 					}
 				}
@@ -623,6 +624,7 @@ static GeneralErrorCast SeperateArguments(PArgumentInstance ParserInstance, PCal
 							for (ii = 0; ii < VVariables->ArgumentCount; ii++, i++, RunVVariables++, RunVAArgs++)
 								CastVariables(ParserInstance, *RunVVariables, RunVariables->VariableType, RunArguments->ArgumentType, RunVAArgs);
 
+							i--;
 							break;
 						}
 					}
